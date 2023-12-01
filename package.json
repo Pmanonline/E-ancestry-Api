@@ -5,28 +5,51 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "devstart": "nodemon index.js"
+    "devStart": "nodemon index.js",
+    "client": "npm start --prefix client",
+    "scss": "node-sass --watch scss/ -o client/src",
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run scss\""
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git remote add origin https://github.com/boltdsg/class-management.git"
+  },
+  "keywords": [
+    "class",
+    "management"
+  ],
+  "author": "uche peter",
   "license": "ISC",
   "dependencies": {
+    "@yaireo/tagify": "^4.17.8",
     "bcrypt": "^5.1.0",
     "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "config": "^3.3.9",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.5.0",
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.3.3",
-    "nodemon": "^2.0.22",
+    "node-sass": "^9.0.0",
+    "select-pure": "^2.1.4",
+    "slugify": "^1.6.6",
     "uuid": "^9.0.0"
   },
   "engines": {
     "node": "18.17.0",
     "yarn": "1.22.19"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.0.1"
   }
 }

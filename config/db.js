@@ -24,8 +24,8 @@
 const { mongoose } = require("mongoose");
 const MONGO_URI =
   // "mongodb+srv://firstCRUD:w3schools.com@crud.zgveazn.mongodb.net/?retryWrites=true&w=majority";
-  // "mongodb+srv://firstCRUD:w3schools.com@crud.zgveazn.mongodb.net/?retryWrites=true&w=majority";
-  "mongodb://127.0.0.1:27017/myDatabase";
+  "mongodb+srv://firstCRUD:w3schools.com@crud.zgveazn.mongodb.net/?retryWrites=true&w=majority";
+// "mongodb://127.0.0.1:27017/myDatabase";
 
 const connectDB = async () => {
   try {

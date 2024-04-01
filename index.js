@@ -11,7 +11,8 @@ app.use(bodyParser.json());
 // CORS middleware
 app.use(
   cors({
-    origin: ["https://schoolmgt-app.vercel.app/", "http://localhost:10000"],
+    origin: "https://schoolmgt-app.vercel.app/",
+    // origin: "http://localhost:10000",
     credentials: true,
   })
 );

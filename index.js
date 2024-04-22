@@ -1,18 +1,25 @@
 const express = require("express");
-const morgan = require("morgan");
-const dotenv = require("dotenv");
 const cors = require("cors");
+const morgan = require("morgan");
+const connect = require("./database/conn.js");
+const router = require("./router/route.js");
+const dotenv = require("dotenv");
+dotenv.config();
+
 const app = express();
-const bodyParser = require("body-parser");
-const ClassUser = require("./models/classModel");
 
-app.use(bodyParser.json());
+/** middlewares */
+app.use(express.json());
+app.use(cors());
+app.use(morgan("tiny"));
+app.disable("x-powered-by"); // less hackers know about our stack
 
-// CORS middleware
+const port = 8080;
 
+// cors
 app.use(
   cors({
-    origin: "https://schoolmgt-app.vercel.app",
+    origin: ["https://rekoda-app.vercel.app/", "http://localhost:3000"],
     credentials: true,
   })
 );
@@ -25,22 +32,31 @@ app.options("*", function (req, res) {
   res.sendStatus(200);
 });
 
-// BorderParser Middleware
-app.use(express.json());
+/** HTTP GET Request */
+app.get("/", (req, res) => {
+  res.status(201).json("Home GET Request");
+});
 
-// Load Env
-dotenv.config({ path: "./config.env" });
+/** api routes */
+app.use("/api", router);
 
-// Log route actions
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
+// Middleware to log incoming requests
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  next();
+});
 
-// Use Routes
-app.use("/api/course", require("./routes/course"));
-app.use("/api/class", require("./routes/class"));
-app.use("/api/student", require("./routes/student"));
-
-const port = process.env.PORT || 5000;
-
-app.listen(port, () => console.log(`Server started on port ${port}`));
+/** start server only when we have valid connection */
+connect()
+  .then(() => {
+    try {
+      app.listen(port, () => {
+        console.log(`Server connected to http://localhost:${port}`);
+      });
+    } catch (error) {
+      console.log("Cannot connect to the server");
+    }
+  })
+  .catch((error) => {
+    console.log("Invalid database connection...!");
+  });

@@ -19,7 +19,7 @@ const port = 8080;
 // cors
 app.use(
   cors({
-    origin: ["https://rekoda-app.vercel.app/", "http://localhost:3000"],
+    origin: ["https://rekoda-app.vercel.app", "http://localhost:3000"],
     credentials: true,
   })
 );

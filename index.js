@@ -1,62 +1,112 @@
 const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
-const connect = require("./database/conn.js");
-const router = require("./router/route.js");
-const dotenv = require("dotenv");
-dotenv.config();
-
+const path = require("path");
 const app = express();
+const bodyParser = require("body-parser");
+const session = require("express-session");
+const cookieParser = require("cookie-parser");
+const passport = require("passport");
+const morgan = require("morgan");
+const cors = require("cors");
+const multer = require("multer");
+const dotenv = require("dotenv");
+const { OAuth2Client } = require("google-auth-library");
+const jwt = require("jsonwebtoken");
+const connectDB = require("./src/config/database");
+const Routes = require("./src/routes/route");
+const FTroutes = require("./src/routes/FamilytreeRoute/FamilyTreeRoute");
+const StateRoutes = require("./src/routes/stateRoutes");
+const NameRoute = require("./src/routes/nameRoute");
+const historicalRoutes = require("./src/routes/historicalRoutes");
+const UserModel = require("./src/models/User.model");
+const PersonModel = require("./src/models/personModel");
+const passportConfig = require("./src/config/passport");
+const { authMiddleware, refreshMiddleware } = require("./src/middleware/auth");
+const http = require("http");
+const { Server } = require("socket.io");
 
-/** middlewares */
-app.use(express.json());
-app.use(cors());
-app.use(morgan("tiny"));
-app.disable("x-powered-by"); // less hackers know about our stack
+dotenv.config();
+connectDB();
+passportConfig(passport);
 
-const port = 8080;
-
-// cors
+// Set up the HTTP server and Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  },
+});
 app.use(
   cors({
-    origin: ["https://rekoda-app.vercel.app", "http://localhost:3000"],
-    credentials: true,
+    origin: "http://localhost:3000", // Allow requests from your React frontend
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+    credentials: true, // Allow credentials (like cookies, authorization headers)
+  })
+);
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_session_secret",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    },
   })
 );
 
-// Allow preflight requests
-app.options("*", function (req, res) {
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.sendStatus(200);
-});
-
-/** HTTP GET Request */
-app.get("/", (req, res) => {
-  res.status(201).json("Home GET Request");
-});
-
-/** api routes */
-app.use("/api", router);
-
-// Middleware to log incoming requests
-app.use((req, res, next) => {
-  console.log(`Incoming request: ${req.method} ${req.url}`);
-  next();
-});
-
-/** start server only when we have valid connection */
-connect()
-  .then(() => {
-    try {
-      app.listen(port, () => {
-        console.log(`Server connected to http://localhost:${port}`);
-      });
-    } catch (error) {
-      console.log("Cannot connect to the server");
-    }
+// Middleware
+app.use(express.json());
+app.use(morgan("dev"));
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://rekoda-app.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
-  .catch((error) => {
-    console.log("Invalid database connection...!");
-  });
+);
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_session_secret",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+};
+app.use(passport.initialize());
+app.use(passport.session());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/insertImage", express.static(path.join(__dirname, "insertImage")));
+
+app.use("/api", Routes);
+app.use("/api", StateRoutes);
+app.use("/api", NameRoute);
+app.use("/api", historicalRoutes);
+app.use("/api", authMiddleware, FTroutes);
+
+// const PORT = process.env.PORT || 8080;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Ensure your required modules and variables are imported correctly

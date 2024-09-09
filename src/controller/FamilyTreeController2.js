@@ -6,14 +6,10 @@ const mongoose = require("mongoose");
 const path = require("path");
 
 const maternalGrtGrandFather = asyncHandler(async (req, res) => {
-  const { firstName, lastName, Lstatus, DOB, yearDeceased } = req.body;
+  const { firstName, lastName, Lstatus, DOB, yearDeceased, placesLived } =
+    req.body;
   const file = req.file ? req.file.path : null;
   const userId = req.user._id;
-
-  // Log the request body and file to debug input data
-  console.log("Request body:", req.body);
-  console.log("File:", file);
-  console.log("User ID:", userId);
 
   // Validate input data
   if (!firstName || !lastName || !DOB || !Lstatus) {
@@ -54,6 +50,7 @@ const maternalGrtGrandFather = asyncHandler(async (req, res) => {
       Lstatus,
       userName,
       yearDeceased,
+      placesLived,
     });
 
     // Create a relationship between the user and the newly created maternal grandfather
@@ -72,6 +69,7 @@ const maternalGrtGrandFather = asyncHandler(async (req, res) => {
       file: person.file,
       role: person.role,
       yearDeceased: person.yearDeceased,
+      placesLived: person.placesLived,
     });
   } catch (error) {
     console.error("Error creating GrtGrandFather, error");
@@ -80,14 +78,10 @@ const maternalGrtGrandFather = asyncHandler(async (req, res) => {
 });
 
 const maternalGrtGrandMother = asyncHandler(async (req, res) => {
-  const { firstName, lastName, Lstatus, DOB, yearDeceased } = req.body;
+  const { firstName, lastName, Lstatus, DOB, yearDeceased, placesLived } =
+    req.body;
   const file = req.file ? req.file.path : null;
   const userId = req.user._id;
-
-  // Log the request body and file to debug input data
-  console.log("Request body:", req.body);
-  console.log("File:", file);
-  console.log("User ID:", userId);
 
   // Validate input data
   if (!firstName || !lastName || !DOB || !Lstatus) {
@@ -128,6 +122,7 @@ const maternalGrtGrandMother = asyncHandler(async (req, res) => {
       Lstatus,
       userName,
       yearDeceased,
+      placesLived,
     });
 
     // Create a relationship between the user and the newly created maternal grandfather
@@ -146,6 +141,7 @@ const maternalGrtGrandMother = asyncHandler(async (req, res) => {
       file: person.file,
       role: person.role,
       yearDeceased: person.yearDeceased,
+      placesLived: person.placesLived,
     });
   } catch (error) {
     console.error("Error creating GrtGrandMother(maternal), error");
@@ -154,14 +150,10 @@ const maternalGrtGrandMother = asyncHandler(async (req, res) => {
 });
 
 const paternalGrtGrandFather = asyncHandler(async (req, res) => {
-  const { firstName, lastName, Lstatus, DOB, yearDeceased } = req.body;
+  const { firstName, lastName, Lstatus, DOB, yearDeceased, placesLived } =
+    req.body;
   const file = req.file ? req.file.path : null;
   const userId = req.user._id;
-
-  // Log the request body and file to debug input data
-  console.log("Request body:", req.body);
-  console.log("File:", file);
-  console.log("User ID:", userId);
 
   // Validate input data
   if (!firstName || !lastName || !DOB || !Lstatus) {
@@ -202,6 +194,7 @@ const paternalGrtGrandFather = asyncHandler(async (req, res) => {
       Lstatus,
       userName,
       yearDeceased,
+      placesLived,
     });
 
     // Create a relationship between the user and the newly created maternal grandfather
@@ -220,6 +213,8 @@ const paternalGrtGrandFather = asyncHandler(async (req, res) => {
       file: person.file,
       role: person.role,
       yearDeceased: person.yearDeceased,
+      yearDeceased: person.yearDeceased,
+      placesLived: person.placesLived,
     });
   } catch (error) {
     console.error("Error creating GrtGrandFather(paternal)");
@@ -228,14 +223,10 @@ const paternalGrtGrandFather = asyncHandler(async (req, res) => {
 });
 
 const paternalGrtGrandMother = asyncHandler(async (req, res) => {
-  const { firstName, lastName, Lstatus, DOB, yearDeceased } = req.body;
+  const { firstName, lastName, Lstatus, DOB, yearDeceased, placesLived } =
+    req.body;
   const file = req.file ? req.file.path : null;
   const userId = req.user._id;
-
-  // Log the request body and file to debug input data
-  console.log("Request body:", req.body);
-  console.log("File:", file);
-  console.log("User ID:", userId);
 
   // Validate input data
   if (!firstName || !lastName || !DOB || !Lstatus) {
@@ -276,6 +267,7 @@ const paternalGrtGrandMother = asyncHandler(async (req, res) => {
       Lstatus,
       userName,
       yearDeceased,
+      placesLived,
     });
 
     // Create a relationship between the user and the newly created maternal grandfather
@@ -294,6 +286,7 @@ const paternalGrtGrandMother = asyncHandler(async (req, res) => {
       file: person.file,
       role: person.role,
       yearDeceased: person.yearDeceased,
+      placesLived: person.placesLived,
     });
   } catch (error) {
     console.error("Error creating GrtGrandMother(paternal)");

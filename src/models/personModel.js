@@ -29,12 +29,14 @@ const personSchema = new mongoose.Schema({
   },
 
   file: {
-    type: String, // Assuming file path is stored as string
+    type: String,
     default: null,
   },
   image: {
-    type: String, // Assuming file path is stored as string
-    default: null,
+    type: String,
+  },
+  placesLived: {
+    type: String,
   },
   userName: { type: String },
   role: {

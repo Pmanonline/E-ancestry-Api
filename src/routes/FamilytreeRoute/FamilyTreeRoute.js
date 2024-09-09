@@ -1,100 +1,3 @@
-// const express = require("express");
-// const multer = require("multer");
-// const path = require("path");
-// const fs = require("fs");
-// const router = express.Router();
-// const app = express();
-
-// const {
-//   createOrUpdateProfile,
-//   getProfile,
-// } = require("../../controller/authController");
-// const {
-//   createPerson,
-//   createMother,
-//   GetMother,
-//   createFather,
-//   paternalGrandMother,
-//   paternalGrandFather,
-//   maternalGrandFather,
-//   maternalGrandMother,
-//   Getperson,
-//   updatePerson,
-//   deletePerson,
-//   GetFather,
-//   GetPGFather,
-//   GetPGMother,
-//   GetMGFather,
-//   GetMGMother,
-// } = require("../../controller/FamilyTreeController");
-
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "uploads/");
-//   },
-//   filename: (req, file, cb) => {
-//     console.log("Saving file with name:", file.originalname);
-//     cb(null, `${Date.now()}-${file.originalname}`);
-//   },
-// });
-// const upload = multer({
-//   storage: storage,
-//   limits: { fileSize: 10000000 },
-//   fileFilter: (req, file, cb) => {
-//     checkFileType(file, cb);
-//   },
-// });
-
-// const checkFileType = function (file, cb) {
-//   const fileTypes = /jpeg|jpg|png|gif|svg/;
-
-//   //check extension names
-//   const extName = fileTypes.test(path.extname(file.originalname));
-
-//   const mimeType = fileTypes.test(file.mimetype);
-
-//   if (mimeType && extName) {
-//     return cb(null, true);
-//   } else {
-//     cb("Error: You can Only Upload Images!!");
-//   }
-// };
-
-// // creeateRoutes
-// router.route("/createPerson").post(upload.single("image"), createPerson);
-// router.route("/createMother").post(upload.single("image"), createMother);
-// router.route("/createFather").post(upload.single("image"), createFather);
-// router
-//   .route("/paternalGrandFather")
-//   .post(upload.single("image"), paternalGrandFather);
-// router
-//   .route("/paternalGrandMother")
-//   .post(upload.single("image"), paternalGrandMother);
-// router
-//   .route("/maternalGrandFather")
-//   .post(upload.single("image"), maternalGrandFather);
-// router
-//   .route("/maternalGrandMother")
-//   .post(upload.single("image"), maternalGrandMother);
-// router.route("/profile").post(upload.single("image"), createOrUpdateProfile);
-
-// // UpdateRoutes
-// router.route("/updatePerson/:id").put(upload.single("image"), updatePerson);
-// // deleteRoute
-// router.route("/deletePerson/:id").delete(deletePerson);
-
-// // getRoutes
-// router.route("/getProfile").get(getProfile);
-// router.route("/GetPerson").get(Getperson);
-// router.route("/GetMother").get(GetMother);
-// router.route("/GetFather").get(GetFather);
-// router.route("/GetPGFather").get(GetPGFather);
-// router.route("/GetPGMother").get(GetPGMother);
-// router.route("/GetMGFather").get(GetMGFather);
-// router.route("/GetMGMother").get(GetMGMother);
-
-// module.exports = router;
-
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -220,11 +123,10 @@ router
   .route("/paternalGrtGrandFather")
   .post(upload.single("image"), paternalGrtGrandFather);
 
-// GetProfile
 router.route("/profile").post(
   upload.fields([
-    { name: "image", maxCount: 1 },
-    { name: "image2", maxCount: 1 },
+    { name: "image", maxCount: 1 }, // Main profile image
+    { name: "images", maxCount: 10 }, // Additional images (up to 5)
   ]),
   createOrUpdateProfile
 );

@@ -1,4 +1,5 @@
 const UserModel = require("../models/User.model");
+const mongoose = require("mongoose");
 const ProfileModel = require("../models/profileModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -15,59 +16,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "Qwe123123";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "Refresh123123";
 
 dotenv.config();
-
-// const register = async (req, res) => {
-//   const { email, password } = req.body;
-
-//   try {
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     const newUser = new UserModel({
-//       email,
-//       password: hashedPassword,
-//     });
-
-//     if (!validator.isEmail(email))
-//       return res.status(400).json("email must be a valid email");
-
-//     // Save the new user
-//     await newUser.save();
-
-//     // Generate the access token and refresh token using newUser directly
-//     const token = jwt.sign({ _id: newUser._id }, process.env.JWT_SECRET, {
-//       expiresIn: "30d",
-//     });
-
-//     const refreshToken = jwt.sign(
-//       { _id: newUser._id },
-//       process.env.JWT_REFRESH_SECRET,
-//       { expiresIn: "30d" }
-//     );
-
-//     // Attach refreshToken to the user and save it again
-//     newUser.refreshToken = refreshToken;
-//     await newUser.save();
-
-//     // Set the refreshToken in an HTTP-only cookie
-//     res.cookie("refreshToken", refreshToken, {
-//       httpOnly: true,
-//       sameSite: "None",
-//       secure: true,
-//     });
-
-//     // Respond with the token, refreshToken, and user info (_id, email)
-//     res.status(201).json({
-//       token,
-//       refreshToken,
-//       user: {
-//         _id: newUser._id,
-//         email: newUser.email,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Error during registration:", error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 const register = async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
@@ -349,6 +297,237 @@ const getAllProfiles = async () => {
   return await UserModel.find();
 };
 
+// const createOrUpdateProfile = asyncHandler(async (req, res) => {
+//   const {
+//     background,
+//     DOB,
+//     firstName,
+//     lastName,
+//     phoneNumber,
+//     streetAddress,
+//     lga,
+//     state,
+//     kindred,
+//     village,
+//     autonomous,
+//     tribe,
+//     religion,
+//     profession,
+//     facebook,
+//     twitter,
+//     instagram,
+//     about,
+//     middlename,
+//   } = req.body;
+
+//   const userId = req.user._id;
+
+//   // Check if images were uploaded
+//   const newImage = req.files["image"] ? req.files["image"][0].path : null;
+//   const newImage2 = req.files["image2"] ? req.files["image2"][0].path : null;
+
+//   // Check if the profile already exists
+//   let profile = await UserModel.findOne({ _id: userId });
+
+//   if (profile) {
+//     // Delete old images if new ones are provided
+//     if (newImage && profile.image) {
+//       const oldImagePath = path.resolve(profile.image);
+//       if (fs.existsSync(oldImagePath)) {
+//         fs.unlink(oldImagePath, (err) => {
+//           if (err) console.error("Failed to delete old image:", err);
+//         });
+//       }
+//     }
+
+//     if (newImage2 && profile.image2) {
+//       const oldImagePath2 = path.resolve(profile.image2);
+//       if (fs.existsSync(oldImagePath2)) {
+//         fs.unlink(oldImagePath2, (err) => {
+//           if (err) console.error("Failed to delete old image2:", err);
+//         });
+//       }
+//     }
+
+//     // Update existing profile, excluding email
+//     profile = await UserModel.findByIdAndUpdate(
+//       profile._id,
+//       {
+//         background,
+//         DOB,
+//         firstName,
+//         lastName,
+//         phoneNumber,
+//         streetAddress,
+//         lga,
+//         state,
+//         kindred,
+//         village,
+//         autonomous,
+//         tribe,
+//         religion,
+//         profession,
+//         facebook,
+//         twitter,
+//         instagram,
+//         about,
+//         middlename,
+//         image: newImage || profile.image,
+//         image2: newImage2 || profile.image2,
+//       },
+//       { new: true, runValidators: true } // Ensure other validations run
+//     );
+//   } else {
+//     // Create a new profile, skipping email check if already exists
+//     profile = await UserModel.create({
+//       _id: userId, // ensure the userId is set
+//       DOB,
+//       background,
+//       firstName,
+//       lastName,
+//       phoneNumber,
+//       streetAddress,
+//       lga,
+//       state,
+//       kindred,
+//       village,
+//       autonomous,
+//       tribe,
+//       religion,
+//       profession,
+//       facebook,
+//       twitter,
+//       instagram,
+//       about,
+//       middlename,
+//       image: newImage,
+//       image2: newImage2,
+//     });
+//   }
+
+//   // Fetch all profiles (if needed, depending on the rest of your application logic)
+//   const allProfiles = await getAllProfiles();
+
+//   res.status(201).json({ updatedProfile: profile, allProfiles });
+// });
+
+// const createOrUpdateProfile = asyncHandler(async (req, res) => {
+//   const {
+//     background,
+//     DOB,
+//     firstName,
+//     lastName,
+//     phoneNumber,
+//     streetAddress,
+//     lga,
+//     state,
+//     kindred,
+//     village,
+//     autonomous,
+//     tribe,
+//     religion,
+//     profession,
+//     facebook,
+//     twitter,
+//     instagram,
+//     about,
+//     middlename,
+//     captions = [], // Ensure captions array is defaulted
+//   } = req.body;
+
+//   const userId = req.user._id;
+
+//   const newImage = req.files["image"] ? req.files["image"][0].path : null;
+
+//   const newImages = req.files["images"]
+//     ? req.files["images"].map((file, index) => ({
+//         path: file.path,
+//         caption: captions[index] || "", // Ensure captions align with images
+//       }))
+//     : [];
+
+//   let profile = await UserModel.findOne({ _id: userId });
+
+//   if (profile) {
+//     if (newImage && profile.image) {
+//       const oldImagePath = path.resolve(profile.image);
+//       if (fs.existsSync(oldImagePath)) {
+//         fs.unlink(oldImagePath, (err) => {
+//           if (err) console.error("Failed to delete old image:", err);
+//         });
+//       }
+//     }
+
+//     if (newImages.length > 0) {
+//       profile.images.forEach((img) => {
+//         const oldImagePath = path.resolve(img.path);
+//         if (fs.existsSync(oldImagePath)) {
+//           fs.unlink(oldImagePath, (err) => {
+//             if (err) console.error("Failed to delete old image:", err);
+//           });
+//         }
+//       });
+//     }
+
+//     profile = await UserModel.findByIdAndUpdate(
+//       profile._id,
+//       {
+//         background,
+//         DOB,
+//         firstName,
+//         lastName,
+//         phoneNumber,
+//         streetAddress,
+//         lga,
+//         state,
+//         kindred,
+//         village,
+//         autonomous,
+//         tribe,
+//         religion,
+//         profession,
+//         facebook,
+//         twitter,
+//         instagram,
+//         about,
+//         middlename,
+//         image: newImage || profile.image,
+//         images: newImages.length > 0 ? newImages : profile.images,
+//       },
+//       { new: true, runValidators: true }
+//     );
+//   } else {
+//     profile = await UserModel.create({
+//       _id: userId,
+//       background,
+//       DOB,
+//       firstName,
+//       lastName,
+//       phoneNumber,
+//       streetAddress,
+//       lga,
+//       state,
+//       kindred,
+//       village,
+//       autonomous,
+//       tribe,
+//       religion,
+//       profession,
+//       facebook,
+//       twitter,
+//       instagram,
+//       about,
+//       middlename,
+//       image: newImage,
+//       images: newImages,
+//     });
+//   }
+
+//   const allProfiles = await getAllProfiles();
+
+//   res.status(201).json({ updatedProfile: profile, allProfiles });
+// });
+
 const createOrUpdateProfile = asyncHandler(async (req, res) => {
   const {
     background,
@@ -370,38 +549,58 @@ const createOrUpdateProfile = asyncHandler(async (req, res) => {
     instagram,
     about,
     middlename,
+    captions = [], // Default to an empty array if captions are missing
   } = req.body;
 
   const userId = req.user._id;
 
-  // Check if images were uploaded
+  // Get the new single image and images array
   const newImage = req.files["image"] ? req.files["image"][0].path : null;
-  const newImage2 = req.files["image2"] ? req.files["image2"][0].path : null;
+  const newImages = req.files["images"]
+    ? req.files["images"].map((file, index) => ({
+        path: file.path,
+        caption: captions[index] || "", // Ensure captions align with images
+      }))
+    : [];
 
-  // Check if the profile already exists
+  // Find the existing profile
   let profile = await UserModel.findOne({ _id: userId });
 
   if (profile) {
-    // Delete old images if new ones are provided
-    if (newImage && profile.image) {
-      const oldImagePath = path.resolve(profile.image);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.error("Failed to delete old image:", err);
-        });
+    // Handle single image update (only if new image is provided)
+    if (newImage) {
+      // Delete the old image only if there's a new image
+      if (profile.image && newImage !== profile.image) {
+        const oldImagePath = path.resolve(profile.image);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlink(oldImagePath, (err) => {
+            if (err) console.error("Failed to delete old image:", err);
+          });
+        }
       }
+      profile.image = newImage; // Update image path
     }
 
-    if (newImage2 && profile.image2) {
-      const oldImagePath2 = path.resolve(profile.image2);
-      if (fs.existsSync(oldImagePath2)) {
-        fs.unlink(oldImagePath2, (err) => {
-          if (err) console.error("Failed to delete old image2:", err);
-        });
-      }
+    // Handle multiple image updates (only if new images are provided)
+    if (newImages.length > 0) {
+      // Delete only the old images that are not in the newImages array
+      const oldImagePaths = profile.images.map((img) => img.path);
+      oldImagePaths.forEach((oldPath) => {
+        if (!newImages.find((newImg) => newImg.path === oldPath)) {
+          const oldImagePath = path.resolve(oldPath);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlink(oldImagePath, (err) => {
+              if (err) console.error("Failed to delete old image:", err);
+            });
+          }
+        }
+      });
+
+      // Update the images field with the new array of images
+      profile.images = [...newImages];
     }
 
-    // Update existing profile, excluding email
+    // Update the profile with new data (if image or images are updated or any other field)
     profile = await UserModel.findByIdAndUpdate(
       profile._id,
       {
@@ -424,17 +623,17 @@ const createOrUpdateProfile = asyncHandler(async (req, res) => {
         instagram,
         about,
         middlename,
-        image: newImage || profile.image,
-        image2: newImage2 || profile.image2,
+        image: profile.image, // Set the current image
+        images: profile.images, // Set the current images array
       },
-      { new: true, runValidators: true } // Ensure other validations run
+      { new: true, runValidators: true }
     );
   } else {
-    // Create a new profile, skipping email check if already exists
+    // Create new profile if none exists
     profile = await UserModel.create({
-      _id: userId, // ensure the userId is set
-      DOB,
+      _id: userId,
       background,
+      DOB,
       firstName,
       lastName,
       phoneNumber,
@@ -452,12 +651,11 @@ const createOrUpdateProfile = asyncHandler(async (req, res) => {
       instagram,
       about,
       middlename,
-      image: newImage,
-      image2: newImage2,
+      image: newImage, // Save new image (if any)
+      images: newImages, // Save new images array (if any)
     });
   }
 
-  // Fetch all profiles (if needed, depending on the rest of your application logic)
   const allProfiles = await getAllProfiles();
 
   res.status(201).json({ updatedProfile: profile, allProfiles });
@@ -469,13 +667,27 @@ const getProfile = asyncHandler(async (req, res) => {
   const profile = await UserModel.findOne({ _id: userId });
 
   if (!profile) {
-    return res.status(404).json({ message: "incomplete profile" });
+    return res.status(404).json({ message: "Incomplete profile" });
   }
+
+  // Debug: Log image paths before mapping
+  console.log("Original image paths:", profile.images);
+
+  // Map over images to include the full URL for the path
+  // if (profile.images && profile.images.length > 0) {
+  //   profile.images = profile.images.map((img) => ({
+  //     path: `${req.protocol}://${req.get("host")}/${img.path}`, // No path replacement, assuming 'uploads/' is part of the correct path
+  //     caption: img.caption,
+  //   }));
+  // }
 
   // If file exists, include the full URL
   if (profile.file) {
     profile.file = `${req.protocol}://${req.get("host")}/${profile.file}`;
   }
+
+  // Debug: Log final profile data to verify the image paths
+  console.log("Updated profile:", profile);
 
   res.status(200).json(profile);
 });

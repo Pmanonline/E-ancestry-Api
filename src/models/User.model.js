@@ -60,7 +60,16 @@ const UserSchema = new mongoose.Schema(
     image2: {
       type: String, // URL of the user's profile image
     },
-    // Additional profile information
+    images: [
+      {
+        path: {
+          type: String, // Path to the image file
+        },
+        caption: {
+          type: String,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

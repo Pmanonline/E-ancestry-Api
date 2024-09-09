@@ -34,21 +34,6 @@ io.on("connection", (socket) => {
     io.emit("getOnlineUsers", onlineUsers);
   });
 
-  // add Message
-  // socket.on("sendMessage", (message) => {
-  //   const user = onlineUsers.find(
-  //     (user) => user.userId === message.recipientId
-  //   );
-
-  //   if (user) {
-  //     io.to(user.socketId).emit("getMessage", message);
-  //     io.to(user.socketId).emit("getNotification", {
-  //       senderId: message.senderId,
-  //       isRead: false,
-  //       date: new Date(),
-  //     });
-  //   }
-  // });
   socket.on("sendMessage", (message) => {
     console.log("Received sendMessage event:", message);
 

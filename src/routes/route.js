@@ -30,7 +30,6 @@ const {
   findChat,
   createMessage,
   getMessages,
-  // getMessageById,
 } = require("../controller/chatController.js");
 
 // Define routes without error handling

@@ -32,18 +32,21 @@ const getNameByValue = async (req, res) => {
 };
 
 const getUsereByQuery = async (req, res) => {
-  const { firstName, lastName, placeLived, dob } = req.query;
+  const { firstName, lastName, placesLived, dob } = req.query;
 
   try {
     const query = {};
     if (firstName) query.firstName = new RegExp(firstName, "i");
     if (lastName) query.lastName = new RegExp(lastName, "i");
-    if (placeLived) query.placeLived = new RegExp(placeLived, "i");
+
+    // Query placesLived as a string
+    if (placesLived) query.placesLived = new RegExp(placesLived, "i");
+
     if (dob) query.DOB = new Date(dob);
 
     console.log("Constructed query:", query);
 
-    const users = await personModel.find(query).limit(100); // Limit results
+    const users = await personModel.find(query).limit(1000); // Limit results
 
     console.log("Database query result:", users);
 

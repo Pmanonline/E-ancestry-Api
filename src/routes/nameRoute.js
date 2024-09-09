@@ -14,7 +14,7 @@ const {
 // Define routes
 router.route("/names").get(getAllNames);
 router.route("/names/:name").get(getNameByValue);
-router.route("/search").get(getUsereByQuery);
 router.route("/searchUser").get(getNameByQuery);
+router.route("/search").get(getUsereByQuery);
 
 module.exports = router;

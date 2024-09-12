@@ -3,17 +3,16 @@ const Visit = require("../models/RecordVisitModal");
 const Person = require("../models/personModel");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
+const Invitation = require("../models/invitationModel");
+const User = require("../models/User.model");
+const UserModel = require("../models/User.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const validator = require("validator");
 
 const generateToken = () => {
   return crypto.randomBytes(20).toString("hex");
 };
-// Define your Invitation schema
-const invitationSchema = new mongoose.Schema({
-  recipient: String,
-  token: String,
-  createdAt: { type: Date, default: Date.now, expires: "1h" }, // Token expires in 1 hour
-});
-const Invitation = mongoose.model("Invitation", invitationSchema);
 
 const registerMail = async (req, res) => {
   const { email, firstName } = req.body;
@@ -56,20 +55,32 @@ const registerMail = async (req, res) => {
 };
 
 const sendInviteEmail = async (req, res) => {
-  const { recipient, name } = req.body;
-  const token = generateToken();
+  const { recipient, name, relationshipType } = req.body;
+  const senderId = req.user._id;
+  const senderName = req.user.firstName;
+  console.log(senderId);
+  console.log(senderName);
 
-  if (!recipient) {
-    return res.status(400).json({ error: "Recipient email is required" });
+  if (!recipient || !relationshipType) {
+    return res
+      .status(400)
+      .json({ error: "Recipient email and relationship type are required" });
   }
 
+  const token = generateToken();
+
   try {
-    // Save invitation with the token
-    await Invitation.create({ recipient, token });
+    // Save invitation with the token and sender information
+    await Invitation.create({
+      recipient,
+      token,
+      sender: senderId,
+      senderName,
+      relationshipType,
+    });
 
     console.log("Sending invite to:", recipient);
-
-    const invitationLink = `http://localhost:3000/accept-invite?token=${token}`;
+    const invitationLink = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -83,11 +94,23 @@ const sendInviteEmail = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: recipient,
       subject: "You're Invited to Join E-Ancestry! 🌳",
-      text: `Hello ${name},\n\nYou have been invited to join E-Ancestry by one of your connections. Explore your family history, connect with relatives, and build your family tree today!\n\nClick the link below to accept the invitation:\n\n[${invitationLink}]\n\nWe're excited to have you onboard!\n\nBest regards,\nThe E-Ancestry Team`,
+      text: `Hello ${name},
+
+You have been invited to join E-Ancestry by ${senderName}, who considers you their ${relationshipType}.
+
+Explore your family history, connect with relatives, and build your family tree today!
+
+Click the link below to accept the invitation:
+
+${invitationLink}
+
+We're excited to have you onboard!
+
+Best regards,
+The E-Ancestry Team`,
     };
 
     await transporter.sendMail(mailOptions);
-
     console.log("Invitation email sent successfully!");
     res.status(200).json({ message: "Invitation email sent successfully!" });
   } catch (error) {
@@ -99,109 +122,184 @@ const sendInviteEmail = async (req, res) => {
 };
 
 const acceptInvite = async (req, res) => {
-  const { token } = req.query;
+  const { email, password, firstName, lastName } = req.body;
+  const token = req.query.token;
 
   if (!token) {
-    return res.status(400).json({ error: "Token is required" });
+    return res.status(401).json({ message: "No token, authorization denied" });
   }
 
   try {
-    // Find the invitation with the given token
+    // Find the invitation using the token
     const invitation = await Invitation.findOne({ token });
 
-    if (!invitation) {
-      return res
-        .status(400)
-        .json({ error: "Invalid or expired invitation link." });
+    if (!invitation || invitation.accepted) {
+      return res.status(401).json({ message: "Invalid or expired token" });
     }
 
-    // Process the invitation (e.g., activate user account, register user, etc.)
-    // For example, you might want to add the user to your database here
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Optionally, remove the invitation after it has been used
-    await Invitation.deleteOne({ token });
+    // Create and save the new user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+    });
 
-    res.status(200).json({ message: "Invitation accepted successfully!" });
+    await newUser.save();
+
+    // Mark the invitation as accepted and link it to the new user
+    invitation.accepted = true;
+    invitation.invitee = newUser._id; // Optionally store the invitee ID
+    await invitation.save();
+
+    // Generate JWT tokens for authentication
+    const newToken = jwt.sign({ _id: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
+    const refreshToken = jwt.sign(
+      { _id: newUser._id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    // Attach refreshToken to the user and save it
+    newUser.refreshToken = refreshToken;
+    await newUser.save();
+
+    // Set the refreshToken in an HTTP-only cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
+
+    // Respond with tokens and user info
+    res.status(201).json({
+      token: newToken,
+      refreshToken,
+      user: {
+        _id: newUser._id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+      },
+      message: "Account created successfully.",
+    });
   } catch (error) {
-    console.error("Error processing invitation:", error);
+    console.error("Error during invitation acceptance:", error);
+
+    // Handle specific errors
+    if (error.name === "JsonWebTokenError") {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
     res
       .status(500)
-      .json({ error: "An error occurred while processing the invitation." });
+      .json({ message: "An error occurred while accepting the invitation." });
   }
 };
 
-// const recordVisit = async (req, res) => {
-//   const { visitorId, visitedId } = req.body;
+const getInvitationDetails = async (req, res) => {
+  const token = req.query.token;
 
-//   if (visitorId === visitedId) {
-//     // Return a message indicating no action was taken
-//     return res.status(200).json({ message: "Visit to self not recorded" });
-//   }
+  if (!token) {
+    return res.status(400).json({ message: "Token is required" });
+  }
 
-//   try {
-//     const existingVisit = await Visit.findOne({
-//       visitor: visitorId,
-//       visited: visitedId,
-//     });
+  try {
+    // Find the invitation based on the token
+    const invitation = await Invitation.findOne({ token });
 
-//     if (existingVisit) {
-//       existingVisit.visitedAt = new Date();
-//       await existingVisit.save();
+    if (!invitation) {
+      return res.status(404).json({ message: "Invitation not found" });
+    }
 
-//       const populatedVisit = await Visit.findById(existingVisit._id)
-//         .populate({ path: "visitor", select: "email firstName lastName image" })
-//         .populate({
-//           path: "visited",
-//           select: "email firstName lastName image",
-//         });
+    // Check if the invitation has been accepted
+    if (invitation.accepted) {
+      return res
+        .status(400)
+        .json({ message: "Invitation has already been accepted" });
+    }
 
-//       // Log the populated visit for debugging
-//       console.log("Updated Visit:", populatedVisit);
+    // Respond with the inviter's details
+    res.status(200).json({
+      senderName: invitation.senderName,
+      relationshipType: invitation.relationshipType,
+    });
+  } catch (error) {
+    console.error("Error fetching invitation details:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching invitation details" });
+  }
+};
 
-//       res.status(200).json(populatedVisit);
-//     } else {
-//       const visit = new Visit({
-//         visitor: visitorId,
-//         visited: visitedId,
-//         visitedAt: new Date(),
-//       });
+const getUsersInvites = async (req, res) => {
+  try {
+    const { userId } = req.params;
 
-//       await visit.save();
+    // Fetch all invites where the user is the sender and populate the invitee details
+    const invites = await Invitation.find({ sender: userId })
+      .populate({
+        path: "invitee",
+        select: "firstName lastName image email",
+      })
+      .select("recipient token senderName relationshipType createdAt invitee");
 
-//       const populatedVisit = await Visit.findById(visit._id)
-//         .populate({ path: "visitor", select: "email" })
-//         .populate({ path: "visited", select: "email" });
+    if (invites.length === 0) {
+      return res.status(404).json({ message: "No invitations found." });
+    }
 
-//       console.log("Created Visit:", populatedVisit);
+    res.status(200).json(invites);
+  } catch (error) {
+    console.error("Error fetching invites:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching invites." });
+  }
+};
 
-//       res.status(201).json(populatedVisit);
-//     }
-//   } catch (error) {
-//     console.error("Error recording visit:", error);
-//     res.status(500).json({ message: "Failed to record visit" });
-//   }
-// };
+const refreshToken = async (req, res) => {
+  const { refreshToken } = req.cookies; // Retrieve refresh token from cookies
 
-// const fetchVisits = async (req, res) => {
-//   const { visitorId, visitedId } = req.query; // Assuming you pass query parameters
+  if (!refreshToken) {
+    return res.status(401).json({ message: "No refresh token provided" });
+  }
 
-//   try {
-//     // Build query based on provided parameters
-//     const query = {};
-//     if (visitorId) query.visitor = visitorId;
-//     if (visitedId) query.visited = visitedId;
+  try {
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    const user = await UserModel.findById(decoded._id);
 
-//     // Fetch visit records
-//     const visits = await Visit.find(query)
-//       .populate({ path: "visitor", select: "email" })
-//       .populate({ path: "visited", select: "email" });
+    // Check if the refresh token is valid and matches the one stored
+    const isValidRefreshToken = user.refreshTokens.some(
+      (tokenObj) => tokenObj.token === refreshToken
+    );
 
-//     res.status(200).json(visits);
-//   } catch (error) {
-//     console.error("Error fetching visits:", error);
-//     res.status(500).json({ message: "Failed to fetch visits" });
-//   }
-// };
+    if (!isValidRefreshToken) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign({ _id: user._id }, JWT_SECRET, {
+      expiresIn: "30d",
+    });
+
+    // Optionally, you can also generate a new refresh token and update it in the DB
+    const newRefreshToken = jwt.sign({ _id: user._id }, JWT_REFRESH_SECRET, {
+      expiresIn: "30d",
+    });
+    UserModel.refreshToken = newRefreshToken;
+    await user.save();
+
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    return res.status(401).json({ message: "Token refresh failed" });
+  }
+};
+
 const recordVisit = async (req, res) => {
   const { visitorId, visitedId } = req.body;
 
@@ -286,4 +384,7 @@ module.exports = {
   acceptInvite,
   recordVisit,
   fetchVisits,
+  refreshToken,
+  getInvitationDetails,
+  getUsersInvites,
 };

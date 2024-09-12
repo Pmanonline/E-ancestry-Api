@@ -19,6 +19,8 @@ const {
   acceptInvite,
   recordVisit,
   fetchVisits,
+  getInvitationDetails,
+  getUsersInvites,
 } = require("../controller/mailer.js");
 
 const {
@@ -37,10 +39,12 @@ router.route("/register").post(register);
 router.route("/login").post(login);
 router.route("/refresh-token").post(refreshToken);
 router.route("/registerMail").post(registerMail);
-router.route("/send-invite").post(sendInviteEmail);
 router.route("/record-visit").post(recordVisit);
 router.route("/fetch-visits").get(fetchVisits);
-router.route("/accept-invite").get(acceptInvite);
+router.route("/send-invite").post(authMiddleware, sendInviteEmail);
+router.route("/accept-invite").post(acceptInvite);
+router.route("/invitation-details").get(getInvitationDetails);
+router.route("/getUsersInvites/:userId").get(getUsersInvites);
 router.route("/authenticate").post(verifyUser, (req, res) => res.end());
 
 router.route("/generateOTP").post(generateOTP);

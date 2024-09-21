@@ -58,8 +58,6 @@ const sendInviteEmail = async (req, res) => {
   const { recipient, name, relationshipType } = req.body;
   const senderId = req.user._id;
   const senderName = req.user.firstName;
-  console.log(senderId);
-  console.log(senderName);
 
   if (!recipient || !relationshipType) {
     return res
@@ -70,16 +68,18 @@ const sendInviteEmail = async (req, res) => {
   const token = generateToken();
 
   try {
-    // Save invitation with the token and sender information
-    await Invitation.create({
+    // Save invitation with the token, sender information, and expiration date
+    const invitation = await Invitation.create({
       recipient,
       token,
       sender: senderId,
       senderName,
       relationshipType,
+      expiresAt: new Date(+new Date() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     });
 
     console.log("Sending invite to:", recipient);
+
     const invitationLink = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
 
     const transporter = nodemailer.createTransport({
@@ -112,12 +112,16 @@ The E-Ancestry Team`,
 
     await transporter.sendMail(mailOptions);
     console.log("Invitation email sent successfully!");
-    res.status(200).json({ message: "Invitation email sent successfully!" });
+
+    res.status(200).json({
+      message: "Invitation email sent successfully!",
+      invitationId: invitation._id,
+    });
   } catch (error) {
     console.error("Error sending email:", error);
-    res.status(500).json({
-      error: "An error occurred while sending the invitation email.",
-    });
+    res
+      .status(500)
+      .json({ error: "An error occurred while sending the invitation email." });
   }
 };
 
@@ -237,17 +241,51 @@ const getInvitationDetails = async (req, res) => {
   }
 };
 
+// const getUsersInvites = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     // Fetch all non-expired invites where the user is the sender and populate the invitee details
+//     const invites = await Invitation.find({
+//       sender: userId,
+//     })
+//       .populate({
+//         path: "invitee",
+//         select: "firstName lastName image email",
+//       })
+//       .select(
+//         "recipient token senderName relationshipType createdAt invitee expiresAt"
+//       );
+
+//     if (invites.length === 0) {
+//       return res.status(404).json({ message: "No active invitations found." });
+//     }
+
+//     res.status(200).json(invites);
+//   } catch (error) {
+//     console.error("Error fetching invites:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while fetching invites." });
+//   }
+// };
 const getUsersInvites = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Fetch all invites where the user is the sender and populate the invitee details
-    const invites = await Invitation.find({ sender: userId })
+    // Fetch all invites where the user is the sender, including accepted ones
+    const invites = await Invitation.find({
+      sender: userId,
+      // Remove the expiration check if you want to include all invitations
+      // expiresAt: { $gt: new Date() },
+    })
       .populate({
         path: "invitee",
         select: "firstName lastName image email",
       })
-      .select("recipient token senderName relationshipType createdAt invitee");
+      .select(
+        "recipient token senderName relationshipType createdAt invitee expiresAt accepted acceptedAt"
+      );
 
     if (invites.length === 0) {
       return res.status(404).json({ message: "No invitations found." });
@@ -261,7 +299,6 @@ const getUsersInvites = async (req, res) => {
       .json({ error: "An error occurred while fetching invites." });
   }
 };
-
 const refreshToken = async (req, res) => {
   const { refreshToken } = req.cookies; // Retrieve refresh token from cookies
 
@@ -304,7 +341,6 @@ const recordVisit = async (req, res) => {
   const { visitorId, visitedId } = req.body;
 
   if (visitorId === visitedId) {
-    // Return a message indicating no action was taken
     return res.status(200).json({ message: "Visit to self not recorded" });
   }
 

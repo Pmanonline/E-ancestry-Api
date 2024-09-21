@@ -20,14 +20,14 @@ const historicalRoutes = require("./src/routes/historicalRoutes");
 const ConnectionRoute = require("./src/routes/connectionRoute");
 const UserModel = require("./src/models/User.model");
 const PersonModel = require("./src/models/personModel");
-const passportConfig = require("./src/config/passport");
+// const passportConfig = require("./src/config/passport");
 const { authMiddleware, refreshMiddleware } = require("./src/middleware/auth");
 const http = require("http");
 const { Server } = require("socket.io");
 
 dotenv.config();
 connectDB();
-passportConfig(passport);
+// passportConfig(passport);
 
 // Set up the HTTP server and Socket.IO
 const server = http.createServer(app);
@@ -69,7 +69,7 @@ io.on("connection", (socket) => {
 
     console.log("onlineUsers =", onlineUsers);
 
-    // Emit the updated online users list to all clients.
+    // Emit the updated online users list to all clients
     io.emit("getOnlineUsers", onlineUsers);
   });
 
@@ -148,8 +148,8 @@ app.use(
   })
 );
 
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 const cookieOptions = {
   httpOnly: true,

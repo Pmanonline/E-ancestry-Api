@@ -50,6 +50,8 @@
     "otp-generator": "^4.0.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "passport-jwt": "^4.0.1",
+    "passport-oauth2": "^1.8.0",
     "path": "^0.12.7",
     "select-pure": "^2.1.4",
     "slugify": "^1.6.6",

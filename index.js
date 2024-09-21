@@ -69,7 +69,7 @@ io.on("connection", (socket) => {
 
     console.log("onlineUsers =", onlineUsers);
 
-    // Emit the updated online users list to all clients
+    // Emit the updated online users list to all clients.
     io.emit("getOnlineUsers", onlineUsers);
   });
 
